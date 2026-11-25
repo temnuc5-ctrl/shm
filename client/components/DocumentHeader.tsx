@@ -4,8 +4,8 @@ import type { DocumentCategory } from "@/lib/documentCategories";
 export const SHM_SAFI_LOGO_PATH = "/assets/logos/shm-safi.png";
 
 const BURGUNDY = "#8B0000";
-const LOGO_SIZE = 92;
-const LOGO_COLUMN = 140;
+const LOGO_SIZE = 116;
+const LOGO_COLUMN = 176;
 
 const rule: CSSProperties = { height: 4, background: BURGUNDY };
 
