@@ -1,0 +1,97 @@
+import "./global.css";
+
+import { useEffect } from "react";
+import { Toaster } from "@/components/ui/toaster";
+import { createRoot } from "react-dom/client";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { DocumentCategoryProvider } from "@/contexts/DocumentCategoryContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { Capacitor } from "@capacitor/core";
+import { offlineStorage } from "@/lib/storage/offlineStorage";
+import { syncManager } from "@/lib/sync/syncManager";
+
+import Index from "./pages/Index";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
+import Reports from "./pages/Reports";
+import SequenceReport from "./pages/SequenceReport";
+import Documents from "./pages/Documents";
+import DocumentGenerator from "./pages/DocumentGenerator";
+import AddReport from "./pages/AddReport";
+import ReportSuccess from "./pages/ReportSuccess";
+import AddSession from "./pages/AddSession";
+import SyncCache from "./pages/SyncCache";
+import Program from "./pages/Program";
+import Ideas from "./pages/Ideas";
+import Account from "./pages/Account";
+import NotFound from "./pages/NotFound";
+
+const queryClient = new QueryClient();
+
+const App = () => {
+  useEffect(() => {
+    // Mode hors ligne du site web (dans l'APK, les fichiers sont déjà embarqués).
+    if ("serviceWorker" in navigator && import.meta.env.PROD && !Capacitor.isNativePlatform()) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+    // Demande un stockage persistant pour protéger IndexedDB / localStorage.
+    navigator.storage?.persist?.().catch(() => {});
+
+    let cancelled = false;
+    (async () => {
+      await offlineStorage.init();
+      if (!cancelled) {
+        await syncManager.init();
+      }
+    })();
+    return () => {
+      cancelled = true;
+      syncManager.destroy();
+    };
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <DocumentCategoryProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+
+                {/* Protected Routes */}
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+                <Route path="/reports/sequence" element={<ProtectedRoute><SequenceReport /></ProtectedRoute>} />
+                <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+                <Route path="/documents/new" element={<ProtectedRoute><DocumentGenerator /></ProtectedRoute>} />
+                <Route path="/add-report" element={<ProtectedRoute><AddReport /></ProtectedRoute>} />
+                <Route path="/report-success" element={<ProtectedRoute><ReportSuccess /></ProtectedRoute>} />
+                <Route path="/add-session" element={<ProtectedRoute><AddSession /></ProtectedRoute>} />
+                <Route path="/sync-cache" element={<ProtectedRoute><SyncCache /></ProtectedRoute>} />
+                <Route path="/program" element={<ProtectedRoute><Program /></ProtectedRoute>} />
+                <Route path="/ideas" element={<ProtectedRoute><Ideas /></ProtectedRoute>} />
+                <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </DocumentCategoryProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+};
+
+createRoot(document.getElementById("root")!).render(<App />);

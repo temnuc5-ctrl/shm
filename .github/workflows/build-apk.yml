@@ -1,0 +1,88 @@
+name: Build APK Android
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    # Version figée : "ubuntu-latest" migre vers Ubuntu 26 le 19/10/2026
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm doit être installé AVANT setup-node (car cache: 'pnpm' en dépend).
+      # Pas de "version:" ici : la v4 la lit dans "packageManager" du package.json.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Vérifier le secret API
+        env:
+          API_URL: ${{ secrets.VITE_API_BASE_URL }}
+        run: test -n "$API_URL" || { echo "::error::Secret VITE_API_BASE_URL manquant (ex. https://shmdoc.netlify.app)"; exit 1; }
+
+      - name: Build web app
+        run: pnpm run build:client
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # L'APK appelle l'API du site déployé pour se connecter.
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+
+      # Capacitor 6 demande Java 17.
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # Le SDK Android est préinstallé sur les runners GitHub.
+      - name: Configure Android SDK
+        run: |
+          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
+
+      # Versions figées sur la même version majeure que @capacitor/core (^6.2.1).
+      - name: Setup Capacitor (dev deps)
+        run: pnpm add -D "@capacitor/cli@^6.2.1" "@capacitor/android@^6.2.1"
+
+      - name: Add Android platform
+        run: pnpm exec cap add android
+
+      - name: Sync Capacitor
+        run: pnpm exec cap sync
+
+      - name: Build Android (debug)
+        run: |
+          cd android
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      # Lien de téléchargement stable : créer un tag "v1.0.0" publie l'APK dans Releases.
+      - name: Publier la release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: android/app/build/outputs/apk/debug/app-debug.apk
