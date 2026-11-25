@@ -77,6 +77,19 @@ export function createServer() {
     }
     next();
   });
+  // Secours Netlify : si le flux est vide, on relit le corps brut de l'événement.
+  app.use((req, _res, next) => {
+    const raw = (req as any).eventBody;
+    const empty = !req.body || (typeof req.body === "object" && Object.keys(req.body).length === 0);
+    if (typeof raw === "string" && raw.length > 0 && empty) {
+      try {
+        req.body = JSON.parse(raw);
+      } catch {
+        // Corps non JSON : la validation de route le rejettera.
+      }
+    }
+    next();
+  });
 
   // Authentification par variables d’environnement.
   app.use("/api/auth", authRoutes);
