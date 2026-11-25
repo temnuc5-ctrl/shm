@@ -67,6 +67,17 @@ export function createServer() {
   app.use("/api", apiLimiter);
   app.use(express.json({ limit: "10mb", type: "*/*" }));
   app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+  // serverless-http fournit le corps en Buffer, que body-parser ignore : on le parse ici.
+  app.use((req, _res, next) => {
+    if (Buffer.isBuffer(req.body) && req.body.length > 0) {
+      try {
+        req.body = JSON.parse(req.body.toString("utf8"));
+      } catch {
+        // Corps non JSON : la validation de route le rejettera.
+      }
+    }
+    next();
+  });
   app.use((req, _res, next) => {
     if (typeof req.body === "string") {
       try {
