@@ -4,8 +4,8 @@ import type { DocumentCategory } from "@/lib/documentCategories";
 export const SHM_SAFI_LOGO_PATH = "/assets/logos/shm-safi.png";
 
 const BURGUNDY = "#8B0000";
-const LOGO_SIZE = 84;
-const LOGO_COLUMN = 110;
+const LOGO_SIZE = 92;
+const LOGO_COLUMN = 140;
 
 const rule: CSSProperties = { height: 4, background: BURGUNDY };
 
@@ -66,19 +66,19 @@ export function DocumentHeader({ category, categoryLogoSrc, shmLogoSrc, baseUrl 
         <tbody>
           <tr>
             <td style={{ ...cell, width: LOGO_COLUMN, textAlign: "left" }}>
-              <img src={withBase(shmLogoSrc || SHM_SAFI_LOGO_PATH, baseUrl)} alt="SHM Safi" style={logoImage} />
-            </td>
-            <td style={{ ...cell, textAlign: "center", direction: "rtl", lineHeight: 1.8 }}>
-              <p style={{ margin: 0, fontWeight: 800, fontSize: 18 }}>بسم الله الرحمن الرحيم</p>
-              <p style={{ margin: 0, fontWeight: 700 }}>الكشفية الحسنية المغربية</p>
-            </td>
-            <td style={{ ...cell, width: LOGO_COLUMN, textAlign: "right" }}>
               {category &&
                 (categoryLogoSrc ? (
                   <img src={withBase(categoryLogoSrc, baseUrl)} alt={category.nom_fr} style={logoImage} />
                 ) : (
                   <span style={letterPlaceholder}>{category.nom_fr.charAt(0).toUpperCase()}</span>
                 ))}
+            </td>
+            <td style={{ ...cell, textAlign: "center", direction: "rtl", lineHeight: 1.8 }}>
+              <p style={{ margin: 0, fontWeight: 800, fontSize: 18 }}>بسم الله الرحمن الرحيم</p>
+              <p style={{ margin: 0, fontWeight: 700 }}>الكشفية الحسنية المغربية</p>
+            </td>
+            <td style={{ ...cell, width: LOGO_COLUMN, textAlign: "right" }}>
+              <img src={withBase(shmLogoSrc || SHM_SAFI_LOGO_PATH, baseUrl)} alt="SHM Safi" style={logoImage} />
             </td>
           </tr>
         </tbody>
